@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function Home() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [activeBranch, setActiveBranch] = useState(0);
@@ -15,10 +18,29 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Logic to handle login, connect to Supabase later
-    console.log("Logging in with:", email, password);
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        console.log("Login successful!", data);
+        // TODO: Redirect to dashboard based on role/branch
+        alert("Login successful!");
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,6 +89,11 @@ export default function Home() {
             </div>
             
             <form onSubmit={handleLogin}>
+              {errorMsg && (
+                <div style={{ color: "var(--error)", marginBottom: "1rem", fontSize: "0.9rem", textAlign: "center", background: "rgba(239, 68, 68, 0.1)", padding: "0.5rem", borderRadius: "8px" }}>
+                  {errorMsg}
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label" htmlFor="email">Email Address</label>
                 <input 
@@ -102,8 +129,8 @@ export default function Home() {
                 <a href="#" className="forgot-link">Forgot Password?</a>
               </div>
               
-              <button type="submit" className="btn-primary">
-                Sign In to ZENPOS
+              <button type="submit" className="btn-primary" disabled={isLoading}>
+                {isLoading ? "Signing In..." : "Sign In to ZENPOS"}
               </button>
             </form>
 
